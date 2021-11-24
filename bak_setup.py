@@ -19,7 +19,10 @@ setuptools.setup(
     packages=setuptools.find_packages(where="infra_cdk"),
 
     install_requires=[
-        "aws-cdk.core==1.129.0",
+        "aws-cdk.core>=1.132.0",
+        "aws-cdk.aws_kinesis>=1.132.0",
+        "aws-cdk.aws_glue>=1.132.0",
+        "aws-cdk.aws_s3>=1.132.0",
     ],
 
     python_requires=">=3.6",
