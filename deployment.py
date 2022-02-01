@@ -10,17 +10,12 @@ from math import ceil
 from glue.infrastracture import Glue
 from kinesis.infrastracture import Kinesis
 from s3.infrastracture import S3
-from ec2.infrastracture import EC2
 from ec2autoscaling.infrastracture import AUTOSCALING
 
 
 class BenchmarkConsumer(Stack):
     def __init__(self, scope: Construct, id_: str, datastream_name: str, datastream_shards: int, glue_worker_count: int, **kwargs) -> None:
         super().__init__(scope, id_, **kwargs)
-
-        # stream_name_param = CfnParameter(self, 'DataStreamName', type='String', default='benchmark-data-stream-1')
-        # shard_count_param = CfnParameter(self, 'ShardCount', type='Number', default=1)
-        # worker_count_param = CfnParameter(self, 'WorkerCount', type='Number', default=2)
 
         kinesis = Kinesis(self, 'Kinesis', 
             stream_name=datastream_name,
@@ -37,12 +32,6 @@ class BenchmarkConsumer(Stack):
             worker_count=glue_worker_count,
         )
 
-        # ec2 = EC2(self, 'EC2',
-        #     kinesis_data_stream=kinesis.data_stream,
-        #     glue_job=glue.flatten_job,
-        #     glue_worker_count=glue_worker_count,
-        #     bucket=s3.bucket,
-        # )
         autoscale = AUTOSCALING(self, "AutoScaling",
             instance_type="c5.xlarge",
             capacity=5, #ceil(glue_worker_count / 10),
