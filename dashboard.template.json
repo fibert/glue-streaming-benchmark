@@ -1,0 +1,443 @@
+{
+    "widgets": [
+        {
+            "height": 6,
+            "width": 24,
+            "y": 26,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "Glue", "glue.ALL.s3.filesystem.read_bytes", "Type", "gauge", "JobRunId", "ALL", "JobName", "{{JOB_NAME}}", { "label": "S3 Bytes Read" } ],
+                    [ ".", "glue.ALL.s3.filesystem.write_bytes", ".", ".", ".", ".", ".", ".", { "label": "S3 Bytes Written" } ]
+                ],
+                "region": "us-east-1",
+                "stat": "Sum",
+                "period": 60,
+                "title": "ETL Data Movement"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 14,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "Glue", "glue.driver.jvm.heap.usage", "Type", "gauge", "JobRunId", "ALL", "JobName", "{{JOB_NAME}}", { "id": "m1", "label": "Driver" } ],
+                    [ ".", "glue.ALL.jvm.heap.usage", ".", ".", ".", ".", ".", ".", { "id": "m2", "label": "Executor Average" } ],
+                    [ ".", "glue.1.jvm.heap.usage", ".", ".", ".", ".", ".", ".", { "label": "Executor 1" } ]
+                ],
+                "region": "us-east-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "Memory Profile: Driver and Executors",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "50% Usage",
+                            "value": 0.5
+                        }
+                    ]
+                },
+                "yAxis": {
+                    "left": {
+                        "min": 0,
+                        "max": 1
+                    },
+                    "right": {
+                        "min": 0,
+                        "max": 1
+                    }
+                }
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 14,
+            "x": 6,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "Glue", "glue.driver.system.cpuSystemLoad", "Type", "gauge", "JobRunId", "ALL", "JobName", "{{JOB_NAME}}", { "label": "Driver", "id": "m1" } ],
+                    [ ".", "glue.ALL.system.cpuSystemLoad", ".", ".", ".", ".", ".", ".", { "label": "Executor Average", "id": "m2" } ],
+                    [ ".", "glue.1.system.cpuSystemLoad", ".", ".", ".", ".", ".", ".", { "label": "Executor 1" } ]
+                ],
+                "region": "us-east-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "CPU Load: Driver and Executors",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "50% Usage",
+                            "value": 0.5
+                        }
+                    ]
+                },
+                "yAxis": {
+                    "left": {
+                        "min": 0,
+                        "max": 1
+                    },
+                    "right": {
+                        "min": 0,
+                        "max": 1
+                    }
+                }
+            }
+        },
+        {
+            "height": 6,
+            "width": 12,
+            "y": 14,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "Glue", "glue.driver.ExecutorAllocationManager.executors.numberAllExecutors", "Type", "gauge", "JobRunId", "ALL", "JobName", "{{JOB_NAME}}", { "label": "Number of Active Executors", "id": "m1" } ],
+                    [ ".", "glue.driver.aggregate.numCompletedStages", ".", "count", ".", ".", ".", ".", { "label": "Number of Completed Stages", "stat": "Sum", "id": "m2" } ],
+                    [ ".", "glue.driver.ExecutorAllocationManager.executors.numberMaxNeededExecutors", ".", "gauge", ".", ".", ".", ".", { "stat": "Maximum", "id": "m3", "label": "Number of Maximum Needed Executors" } ]
+                ],
+                "region": "us-east-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "Job Execution: Active Executors, Completed Stages & Maximum Needed Executors",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "Maximum Allocated Executors",
+                            "value": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 7,
+            "x": 6,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "1 *\n                2097152 * PERIOD(m0) * IF(m0, 1, 1)", "label": "Maximum get records Limit", "id": "e0", "color": "#d62728", "period": 60 } ],
+                    [ "AWS/Kinesis", "GetRecords.Bytes", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m0", "visible": true } ]
+                ],
+                "stat": "Sum",
+                "title": "Get records - sum (Bytes)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 12,
+            "y": 7,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "GetRecords.IteratorAgeMilliseconds", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m1", "visible": true } ]
+                ],
+                "stat": "Maximum",
+                "title": "Get records iterator age - maximum (Milliseconds)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 32,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "GetRecords.Latency", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m2", "visible": true } ]
+                ],
+                "stat": "Average",
+                "title": "Get records latency - average (Milliseconds)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 7,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "GetRecords.Records", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m3", "visible": true } ]
+                ],
+                "stat": "Sum",
+                "title": "Get records - sum (Count)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 32,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "GetRecords.Success", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m4", "visible": true } ]
+                ],
+                "stat": "Average",
+                "title": "Get records success - average (Percent)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 1,
+            "x": 6,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "1 *\n                1048576 * PERIOD(m5) * IF(m5, 1, 1)", "label": "Incoming data Limit", "id": "e5", "color": "#d62728", "period": 60 } ],
+                    [ "AWS/Kinesis", "IncomingBytes", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m5", "visible": true } ]
+                ],
+                "stat": "Sum",
+                "title": "Incoming data - sum (Bytes)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 1,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "1 *\n                1000 * PERIOD(m6) * IF(m6, 1, 1)", "label": "Incoming records Limit", "id": "e6", "color": "#d62728", "period": 60 } ],
+                    [ "AWS/Kinesis", "IncomingRecords", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m6", "visible": true } ]
+                ],
+                "stat": "Sum",
+                "title": "Incoming data - sum (Count)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 1,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "PutRecords.Bytes", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m10", "visible": true } ]
+                ],
+                "stat": "Sum",
+                "title": "Put records - sum (Bytes)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 37,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "PutRecords.Latency", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m11", "visible": true } ]
+                ],
+                "stat": "Average",
+                "title": "Put records latency - average (Milliseconds)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 37,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "ReadProvisionedThroughputExceeded", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m12", "visible": true } ]
+                ],
+                "stat": "Average",
+                "title": "Read throughput exceeded - average (Percent)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 42,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ "AWS/Kinesis", "WriteProvisionedThroughputExceeded", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m13", "visible": true } ]
+                ],
+                "stat": "Average",
+                "title": "Write throughput exceeded - average (Count)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 42,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "(m11/m12) * 100", "id": "e1", "period": 60, "label": "Put records successful records - average (Percent)" } ],
+                    [ "AWS/Kinesis", "PutRecords.SuccessfulRecords", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m11", "visible": false } ],
+                    [ ".", "PutRecords.TotalRecords", ".", ".", { "id": "m12", "visible": false } ]
+                ],
+                "title": "Put records successful records - average (Percent)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 12,
+            "y": 47,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "(m13/m12) * 100", "id": "e2", "period": 60, "label": "Put records failed records - average (Percent)" } ],
+                    [ "AWS/Kinesis", "PutRecords.FailedRecords", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m13", "visible": false } ],
+                    [ ".", "PutRecords.TotalRecords", ".", ".", { "id": "m12", "visible": false } ]
+                ],
+                "title": "Put records failed records - average (Percent)"
+            }
+        },
+        {
+            "height": 6,
+            "width": 6,
+            "y": 1,
+            "x": 18,
+            "type": "metric",
+            "properties": {
+                "region": "us-east-1",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "metrics": [
+                    [ { "expression": "(m15/m12) * 100", "id": "e3", "period": 60, "label": "Put records throttled records - average (Percent)" } ],
+                    [ "AWS/Kinesis", "PutRecords.ThrottledRecords", "StreamName", "{{DATASTREAM_NAME}}", { "id": "m15", "visible": false } ],
+                    [ ".", "PutRecords.TotalRecords", ".", ".", { "id": "m12", "visible": false } ]
+                ],
+                "title": "Put records throttled records - average (Percent)"
+            }
+        },
+        {
+            "height": 1,
+            "width": 24,
+            "y": 0,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# Kinesis Data Stream"
+            }
+        },
+        {
+            "height": 6,
+            "width": 24,
+            "y": 20,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": ""
+            }
+        },
+        {
+            "height": 1,
+            "width": 24,
+            "y": 13,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# Glue Job"
+            }
+        }
+    ]
+}
