@@ -52,6 +52,7 @@ class AutoScaling(Construct):
             path=bench_script_filename,
         )
 
+        bashrc_path = '/root/.bashrc' # '/home/ec2-user/.bashrc'
 
         multipart_user_data = ec2.MultipartUserData()
         user_data = ec2.UserData.for_linux()
@@ -66,36 +67,30 @@ class AutoScaling(Construct):
             'mv apache-maven-3.8.4  /usr/local/apache-maven',
             'rm apache-maven-3.8.4-bin.tar.gz',
 
-            'echo export M2_HOME=/usr/local/apache-maven >> /home/ec2-user/.bashrc',
-            'echo export M2=\\$M2_HOME/bin >> /home/ec2-user/.bashrc',
-            'echo export PATH=\\$M2:$PATH >> /home/ec2-user/.bashrc',
+            f'echo export M2_HOME=/usr/local/apache-maven >> {bashrc_path}',
+            f'echo export M2=\\$M2_HOME/bin >> {bashrc_path}',
+            f'echo export PATH=\\$M2:$PATH >> {bashrc_path}',
 
-            f'echo export GLUE_JOB_NAME={glue_job.job_name} >> /home/ec2-user/.bashrc',
-            f'echo export GLUE_WORKERS={config.GLUE_JOB_WORKERS} >> /home/ec2-user/.bashrc',
-            f'echo export KINESIS_DATASTREAM={kinesis_data_stream.stream_name} >> /home/ec2-user/.bashrc',
-            f'echo export AWS_DEFAULT_REGION={Aws.REGION} >> /home/ec2-user/.bashrc',
+            f'echo export GLUE_JOB_NAME={glue_job.job_name} >> {bashrc_path}',
+            f'echo export GLUE_WORKERS={config.GLUE_JOB_WORKERS} >> {bashrc_path}',
+            f'echo export KINESIS_DATASTREAM={kinesis_data_stream.stream_name} >> {bashrc_path}',
+            f'echo export AWS_DEFAULT_REGION={Aws.REGION} >> {bashrc_path}',
 
-            f'echo export PRODUCER_RPS_MIN={config.EC2_PRODUCER_RPS_MIN} >> /home/ec2-user/.bashrc',
-            f'echo export PRODUCER_RPS_MAX={config.EC2_PRODUCER_RPS_MAX} >> /home/ec2-user/.bashrc',
-            f'echo export PRODUCER_RPS_STEP={config.EC2_PRODUCER_RPS_STEP} >> /home/ec2-user/.bashrc',
-            f'echo export PRODUCER_RUNNING_TIME={config.EC2_PRODUCER_RUNNING_TIME} >> /home/ec2-user/.bashrc',
+            f'echo export PRODUCER_RPS_MIN={config.EC2_PRODUCER_RPS_MIN} >> {bashrc_path}',
+            f'echo export PRODUCER_RPS_MAX={config.EC2_PRODUCER_RPS_MAX} >> {bashrc_path}',
+            f'echo export PRODUCER_RPS_STEP={config.EC2_PRODUCER_RPS_STEP} >> {bashrc_path}',
+            f'echo export PRODUCER_RUNNING_TIME={config.EC2_PRODUCER_RUNNING_TIME} >> {bashrc_path}',
 
-            'git clone https://github.com/fibert/amazon-kinesis-producer.git /home/ec2-user/amazon-kinesis-producer',
-            'cd /home/ec2-user/amazon-kinesis-producer/java/amazon-kinesis-producer-sample',
+            f'source {bashrc_path}',
+
+            'git clone https://github.com/fibert/amazon-kinesis-producer.git',
+            'cd amazon-kinesis-producer/java/amazon-kinesis-producer-sample',
             
             
             f'aws s3 cp {asset_bench_loop_shell_script.s3_object_url} ./bench_loop.sh',
-            # f"mv ./{asset_bench_loop_shell_script.s3_object_key.split('/')[-1]} bench_loop.sh",
             f"chmod u+x ./bench_loop.sh",
-            
 
-            'chown -R ec2-user: /home/ec2-user/amazon-kinesis-producer',
-
-            'nohup ./bench_loop.sh',
-
-
-            # f"./{asset_bench_loop_shell_script.s3_object_key.split('/')[-1]}",
-            # f"aws s3 cp output-loop s3://fibertdf-spark-ui-logs/output-loop-{glue_worker_count}",
+            './bench_loop.sh',    
         )
 
 
