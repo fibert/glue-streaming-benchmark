@@ -100,7 +100,7 @@ class Glue(Construct):
         )
 
 
-
-        bucket_spark_ui_logs = s3.Bucket.from_bucket_name(self, 'Spark-ui-logs', config.S3_OUTPUT_BUCKET_NAME)
+        spark_ui_bucket = config.GLUE_JOB_SPARK_EVENT_LOGS_PATH.split('/')[2]
+        bucket_spark_ui_logs = s3.Bucket.from_bucket_name(self, 'Spark-ui-logs', spark_ui_bucket)
         bucket_spark_ui_logs.grant_read_write(role_glue)
 

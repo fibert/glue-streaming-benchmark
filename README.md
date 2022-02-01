@@ -1,16 +1,28 @@
 
-# Welcome to your CDK Python project!
+# Glue Streaming Benchmark
 
-This is a blank project for Python development with CDK.
+![CDK diagram](/docs/diagram.png)
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Prerequisites
+1. Install CDK
+2. Install python dependencies in a virutal env
+3. Create a CloudWatch dashboard
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+
+
+## How to create a CloudWatch dashboard
+
+CloudWatch dashboards can 
+
+- Open [dashboard.template.json](dashboard.template.json)
+- Replace every occurence of `{{JOB_NAME}}` with your Glue streaming job name
+- Replace every occurence of `{{DATASTREAM_NAME}}` with your Kinesis DataStream name
+- In CloudWatch, create a new empty dashboard
+- Click on **Actions** -> **View/edit source**
+- Paste the JSON edited file 
+
+
+## How to work with CDK
 
 To manually create a virtualenv on MacOS and Linux:
 
@@ -25,12 +37,6 @@ step to activate your virtualenv.
 $ source .venv/bin/activate
 ```
 
-If you are a Windows platform, you would activate the virtualenv like this:
-
-```
-% .venv\Scripts\activate.bat
-```
-
 Once the virtualenv is activated, you can install the required dependencies.
 
 ```
@@ -43,16 +49,4 @@ At this point you can now synthesize the CloudFormation template for this code.
 $ cdk synth
 ```
 
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
-
-## Useful commands
-
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
-
-Enjoy!
+## Files and Directorie
