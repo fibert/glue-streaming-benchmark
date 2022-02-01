@@ -15,6 +15,7 @@ Install the AWS CDK Toolkit globally using the following Node Package Manager co
 npm install -g aws-cdk
 ```
 
+Run the following command to verify correct installation and print the version number of the AWS CDK.
 ```
 cdk --version
 ```
@@ -58,7 +59,7 @@ $ cdk synth
 
 ## Usage
 
-You can edit the configuration at (config.py)[config.py], noticable parameters:
+You can edit the configuration at [config.py](config.py), noticable parameters:
 - `GLUE_JOB_WORKERS` - Number of workers for the glue job
 - `GLUE_JOB_ETL_SCRIPT` - The ETL script path for the job
 - `GLUE_JOB_SPARK_EVENT_LOGS_PATH` - The S3 bucket for the Spark-UI logs
