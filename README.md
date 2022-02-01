@@ -80,3 +80,18 @@ To destroy the stack run the following command
 ```
 cdk destroy -f
 ```
+
+## Output
+
+The metrics would be saved in the CloudWatch dashboard you created.
+
+To get the time and date of the run:
+1. SSH into one of the EC2 instances in the created AutoScaling group
+2. Login as root:
+```
+sudo su -
+```
+3. Read the following file:
+```
+less /amazon-kinesis-producer/java/amazon-kinesis-producer-sample/output-loop
+```
