@@ -12,37 +12,28 @@ from aws_cdk import (
 )
 import glue.cfn_columns as columns
 
+import config
+
 class Glue(Construct):
-    def __init__(self, scope: Construct, id_: str, data_stream: kinesis.Stream, bucket: s3.Bucket, worker_count :int = 2) -> None:
+    def __init__(self, scope: Construct, id_: str, data_stream: kinesis.Stream, bucket: s3.Bucket) -> None:
         super().__init__(scope, id_)
 
         self.flatten_job = None
 
 
         database = glue_alpha.Database(self, 'benchmark-database',
-            database_name=f'glue-benchmark-db-{worker_count}',
+            database_name=config.GLUE_DATABASE_NAME,
         )
 
-        # table = glue.Table(self, 'benchmark-table',
-        #     table_name='glue-benchmark-json-table',
-        #     database=database,
-        #     data_format=glue.DataFormat.JSON,
-        #     columns=columns.table_columns[:2],
-        #     bucket=data_stream,
-            
-        # )
-
-        # bench_stream = kinesis.Stream.from_stream_arn(self, 'aaa', stream_arn='arn:aws:kinesis:us-east-1:027179758433:stream/benchmark-1')
-        # data_stream = bench_stream
 
         cfn_table = glue.CfnTable(
             self,
-            "cfn-benchmark-table",
+            "glue-benchmark-table",
             catalog_id=database.catalog_id,
             database_name=database.database_name,
             table_input=glue.CfnTable.TableInputProperty(
                 description="Glue Streaming Benchmark Table",
-                name='cfn-benchmark-table',
+                name=config.GLUE_TABLE_NAME,
                 parameters={
                     "classification": "json",
                 },
@@ -55,15 +46,6 @@ class Glue(Construct):
                         "streamName": f"{data_stream.stream_name}",
                         "typeOfData": "kinesis"
                     },
-                    # input_format="org.apache.hadoop.mapred.TextInputFormat",
-                    # output_format="org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-                    # serde_info=glue.CfnTable.SerdeInfoProperty(
-                    #     name="miztiikAutomationSerDeConfig",
-                    #     serialization_library="org.openx.data.jsonserde.JsonSerDe",
-                    #     parameters={
-                    #         "paths": "",
-                    #     }
-                    # )
                 )
             )
         )
@@ -71,7 +53,7 @@ class Glue(Construct):
 
 
         role_glue = iam.Role(self, 'benchmark-glue-role',
-            role_name=f'glue-benchmark-role-{worker_count}',
+            role_name=config.GLUE_JOB_ROLE_NAME,
             assumed_by=iam.ServicePrincipal('glue.amazonaws.com'),
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(managed_policy_name='service-role/AWSGlueServiceRole')],
         )
@@ -80,30 +62,17 @@ class Glue(Construct):
         bucket.grant_read_write(role_glue)
         data_stream.grant_read_write(role_glue)
 
-        # flatten_json = s3assets.Asset(self, 'benchmark-etl-script-flatten',
-        #     path='glue/etl_scripts/flatten_json.py',
-        #     readers=[role_glue],
-        # )
-
-        asset_protobuf_jar = s3assets.Asset(self, 'protobuf-jar',
-            path='glue/jars/protobuf-java-3.11.4.jar',
-            # readers=[role_glue],
-        )
-        # asset_protobuf_jar.grant_read(role_glue)
-
         deployment_protobuf_jar = s3deploy.BucketDeployment(self, 'populate-jars',
             sources=[s3deploy.Source.asset('glue/jars')],
             destination_bucket=bucket,
             destination_key_prefix='jars/'
         )
 
-        table_name = cfn_table.table_input.name
-        etl_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etl_scripts/flatten_json_new.py')
-        id_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etl_scripts/id_streaming.py')
+        etl_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), config.GLUE_JOB_ETL_SCRIPT)
 
 
-        self.flatten_job = glue_alpha.Job(self, 'benchmark-streaming-job',
-            job_name=f'flatten_json_{worker_count}',
+        self.flatten_job = glue_alpha.Job(self, 'glue-benchmark-streaming-job',
+            job_name=config.GLUE_JOB_NAME,
             executable=glue_alpha.JobExecutable.python_streaming(
                 glue_version=glue_alpha.GlueVersion.V3_0,
                 python_version=glue_alpha.PythonVersion.THREE,
@@ -113,25 +82,25 @@ class Glue(Construct):
             max_concurrent_runs=1,
             role=role_glue,
             default_arguments={
-                '--EVENT_TYPES': 'testevent',
-                '--STAGING_PATH': f"{bucket.s3_url_for_object('flatten/staging/')}",
-                '--WINDOW_SIZE': '10 seconds',
-                '--OUTPUT_PATH': f"{bucket.s3_url_for_object('flatten/output/')}",
                 '--INPUT_DB': f"{database.database_name}",
-                '--CHECKPOINT_LOCATION': f"{bucket.s3_url_for_object('flatten/checkpoint/')}",
-                '--INPUT_TABLE': f"{table_name}",
+                '--INPUT_TABLE': f"{cfn_table.table_input.name}",
+                '--EVENT_TYPES': 'testevent',
+                '--WINDOW_SIZE': config.GLUE_JOB_PARAMETER_WINDOW_SIZE,
+                '--STAGING_PATH': f"{bucket.s3_url_for_object(config.GLUE_JOB_PARAMETER_STAGING_PATH)}",
+                '--OUTPUT_PATH': f"{bucket.s3_url_for_object(config.GLUE_JOB_PARAMETER_OUTPUT_PATH)}",
+                '--CHECKPOINT_LOCATION': f"{bucket.s3_url_for_object(config.GLUE_JOB_PARAMETER_CHECKPOINT_PATH)}",
                 "--extra-jars": f"{bucket.s3_url_for_object('jars/protobuf-java-3.11.4.jar')}",
                 "--user-jars-first": "true",
                 '--enable-spark-ui': 'true',
-                '--spark-event-logs-path': f's3://fibertdf-spark-ui-logs/flatten-{worker_count}',
+                '--spark-event-logs-path': config.GLUE_JOB_SPARK_EVENT_LOGS_PATH,
             },
-            worker_count=worker_count,
+            worker_count=config.GLUE_JOB_WORKERS,
             worker_type=glue_alpha.WorkerType.G_1_X,
             max_retries=0,
         )
 
 
 
-        bucket_spark_ui_logs = s3.Bucket.from_bucket_name(self, 'Spark-ui-logs', 'fibertdf-spark-ui-logs')
+        bucket_spark_ui_logs = s3.Bucket.from_bucket_name(self, 'Spark-ui-logs', config.S3_OUTPUT_BUCKET_NAME)
         bucket_spark_ui_logs.grant_read_write(role_glue)
 
