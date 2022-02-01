@@ -10,13 +10,20 @@ sleep 30
 
 
 outfile="output-loop"
-echo > $outfile
+echo "Benchmark started at $(date):"> $outfile
+echo >> $outfile
+
 
 stream_name=$KINESIS_DATASTREAM
 region=$AWS_DEFAULT_REGION
 producer_running_time=$PRODUCER_RUNNING_TIME
 
 sleep_time_between_runs=$(expr 60 \* 10)
+
+echo PRODUCER_RPS_MIN=$PRODUCER_RPS_MIN >> $outfile
+echo PRODUCER_RPS_MAX=$PRODUCER_RPS_MAX >> $outfile
+echo PRODUCER_RPS_STEP=$PRODUCER_RPS_STEP >> $outfile
+echo >> $outfile
 
 for (( records_per_sec=$PRODUCER_RPS_MIN ;  records_per_sec<=$PRODUCER_RPS_MAX ; records_per_sec+=$PRODUCER_RPS_STEP ))
 do 
