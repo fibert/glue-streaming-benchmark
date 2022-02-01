@@ -1,20 +1,26 @@
 import os
+from constructs import Construct
 from aws_cdk import (
-    core as cdk,
+    aws_glue_alpha as glue_alpha,
     aws_glue as glue,
     aws_kinesis as kinesis,
     aws_s3 as s3,
+    aws_s3_deployment as s3deploy,
     aws_s3_assets as s3assets,
     aws_iam as iam,
+    Aws,
 )
 import glue.cfn_columns as columns
 
-class Glue(cdk.Construct):
-    def __init__(self, scope: cdk.Construct, id_: str, data_stream: kinesis.Stream, bucket: s3.Bucket) -> None:
+class Glue(Construct):
+    def __init__(self, scope: Construct, id_: str, data_stream: kinesis.Stream, bucket: s3.Bucket, worker_count :int = 2) -> None:
         super().__init__(scope, id_)
 
-        database = glue.Database(self, 'benchmark-database',
-            database_name='glue-benchmark-db',
+        self.flatten_job = None
+
+
+        database = glue_alpha.Database(self, 'benchmark-database',
+            database_name=f'glue-benchmark-db-{worker_count}',
         )
 
         # table = glue.Table(self, 'benchmark-table',
@@ -37,15 +43,15 @@ class Glue(cdk.Construct):
             table_input=glue.CfnTable.TableInputProperty(
                 description="Glue Streaming Benchmark Table",
                 name='cfn-benchmark-table',
-                # parameters={
-                #     "classification": "json",
-                # },
+                parameters={
+                    "classification": "json",
+                },
                 table_type="EXTERNAL_TABLE",
                 storage_descriptor=glue.CfnTable.StorageDescriptorProperty(
                     columns=columns.cfn_table_columns,
                     location=f"{data_stream.stream_name}",
                     parameters={
-                        "endpointUrl": f"https://kinesis.{cdk.Aws.REGION}.amazonaws.com",
+                        "endpointUrl": f"https://kinesis.{Aws.REGION}.amazonaws.com",
                         "streamName": f"{data_stream.stream_name}",
                         "typeOfData": "kinesis"
                     },
@@ -65,10 +71,12 @@ class Glue(cdk.Construct):
 
 
         role_glue = iam.Role(self, 'benchmark-glue-role',
-            role_name='glue-benchmark-role',
+            role_name=f'glue-benchmark-role-{worker_count}',
             assumed_by=iam.ServicePrincipal('glue.amazonaws.com'),
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(managed_policy_name='service-role/AWSGlueServiceRole')],
         )
+        role_glue.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
+        role_glue.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('CloudWatchLogsFullAccess'))
         bucket.grant_read_write(role_glue)
         data_stream.grant_read_write(role_glue)
 
@@ -77,67 +85,53 @@ class Glue(cdk.Construct):
         #     readers=[role_glue],
         # )
 
+        asset_protobuf_jar = s3assets.Asset(self, 'protobuf-jar',
+            path='glue/jars/protobuf-java-3.11.4.jar',
+            # readers=[role_glue],
+        )
+        # asset_protobuf_jar.grant_read(role_glue)
+
+        deployment_protobuf_jar = s3deploy.BucketDeployment(self, 'populate-jars',
+            sources=[s3deploy.Source.asset('glue/jars')],
+            destination_bucket=bucket,
+            destination_key_prefix='jars/'
+        )
+
         table_name = cfn_table.table_input.name
-        etl_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etl_scripts/flatten_json.py')
+        etl_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etl_scripts/flatten_json_new.py')
+        id_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etl_scripts/id_streaming.py')
 
 
-        job = glue.Job(self, 'benchmark-streaming-job',
-            job_name='flatten_json',
-            executable=glue.JobExecutable.python_streaming(
-                glue_version=glue.GlueVersion.V2_0,
-                python_version=glue.PythonVersion.THREE,
-                script=glue.Code.from_asset(etl_path)
+        self.flatten_job = glue_alpha.Job(self, 'benchmark-streaming-job',
+            job_name=f'flatten_json_{worker_count}',
+            executable=glue_alpha.JobExecutable.python_streaming(
+                glue_version=glue_alpha.GlueVersion.V3_0,
+                python_version=glue_alpha.PythonVersion.THREE,
+                script=glue_alpha.Code.from_asset(etl_path)
             ),
             enable_profiling_metrics=True,
             max_concurrent_runs=1,
             role=role_glue,
             default_arguments={
                 '--EVENT_TYPES': 'testevent',
-                '--STAGING_PATH': f"{bucket.s3_url_for_object('staging/')}",
-                '--WINDOW_SIZE': '60 seconds',
-                '--OUTPUT_PATH': f"{bucket.s3_url_for_object('output/')}",
+                '--STAGING_PATH': f"{bucket.s3_url_for_object('flatten/staging/')}",
+                '--WINDOW_SIZE': '10 seconds',
+                '--OUTPUT_PATH': f"{bucket.s3_url_for_object('flatten/output/')}",
                 '--INPUT_DB': f"{database.database_name}",
-                '--CHECKPOINT_LOCATION': f"{bucket.s3_url_for_object('checkpoint/')}",
+                '--CHECKPOINT_LOCATION': f"{bucket.s3_url_for_object('flatten/checkpoint/')}",
                 '--INPUT_TABLE': f"{table_name}",
+                "--extra-jars": f"{bucket.s3_url_for_object('jars/protobuf-java-3.11.4.jar')}",
+                "--user-jars-first": "true",
+                '--enable-spark-ui': 'true',
+                '--spark-event-logs-path': f's3://fibertdf-spark-ui-logs/flatten-{worker_count}',
             },
-            worker_count=2,
-            worker_type=glue.WorkerType.G_1_X,
+            worker_count=worker_count,
+            worker_type=glue_alpha.WorkerType.G_1_X,
             max_retries=0,
         )
 
 
-# job_cases_and_death_raw_to_transformed = glue.CfnJob(self, 'Job_Cases_And_death_Raw_To_Transformed',
-#             name='covid-19-cases-and-death-raw-to-transformed-job',
-#             command=glue.CfnJob.JobCommandProperty(
-#                 name='glueetl',
-#                 python_version='3',
-#                 script_location=asset_etl_script_cases_and_death.s3_object_url,
-#             ),
-#             default_arguments={
-#                 '--enable-glue-datacatalog': '""',
-#                 '--source_database_name': database_covid_raw.database_name,
-#                 '--source_table_name': 'cases_and_death',
-#                 '--target_database_name': database_covid_transformed.database_name,
-#                 '--target_bucket': bucket_transformed.bucket_name,
-#                 '--target_table_name': 'cases_and_death',
-#                 '--TempDir': f's3://{bucket_glue.bucket_name}/etl/raw-to-transformed',
-#                 "--job-bookmark-option": "job-bookmark-enable",
-#             },
-#             execution_property=glue.CfnJob.ExecutionPropertyProperty(
-#                 max_concurrent_runs=1,
-#             ),
-#             glue_version='2.0',
-#             max_retries=0,
-#             number_of_workers=2,
-#             role=role_glue.role_arn,
-#             worker_type='G.1X',
-#         )
-#         job_cases_and_death_raw_to_transformed.node.add_dependency(asset_etl_script_cases_and_death)
-#         job_cases_and_death_raw_to_transformed.node.add_dependency(database_covid_raw)
-#         job_cases_and_death_raw_to_transformed.node.add_dependency(database_covid_transformed)
-#         job_cases_and_death_raw_to_transformed.node.add_dependency(bucket_transformed)
-#         job_cases_and_death_raw_to_transformed.node.add_dependency(bucket_glue)
 
+        bucket_spark_ui_logs = s3.Bucket.from_bucket_name(self, 'Spark-ui-logs', 'fibertdf-spark-ui-logs')
+        bucket_spark_ui_logs.grant_read_write(role_glue)
 
-
-        

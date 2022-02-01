@@ -1,14 +1,17 @@
+from constructs import Construct
 from aws_cdk import (
-    core as cdk,
     aws_kinesis as kinesis,
+    Duration,
 )
 
-class Kinesis(cdk.Construct):
-    def __init__(self, scope: cdk.Construct, id_: str) -> None:
+class Kinesis(Construct):
+    def __init__(self, scope: Construct, id_: str, stream_name: str, shard_count :int = 1) -> None:
         super().__init__(scope, id_)
 
+        
+        
         self.data_stream = kinesis.Stream(self, 'benchmark-stream',
-            stream_name='benchmark-2',
-            shard_count=1,
-            retention_period=cdk.Duration.hours(24),
+            stream_name=stream_name,
+            shard_count=shard_count,
+            retention_period=Duration.hours(24),
         )
