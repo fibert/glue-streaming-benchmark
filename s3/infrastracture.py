@@ -4,12 +4,14 @@ from aws_cdk import (
     RemovalPolicy
 )
 
+import config
+
 class S3(Construct):
-    def __init__(self, scope: Construct, id_: str, glue_worker_count: int) -> None:
+    def __init__(self, scope: Construct, id_: str) -> None:
         super().__init__(scope, id_)
 
-        self.bucket = s3.Bucket(self, 'benchmark-output-bucket',
-            bucket_name=f'glue-benchmark-output-bucket-{glue_worker_count}',
+        self.bucket = s3.Bucket(self, 'glue-benchmark-output-bucket',
+            bucket_name=config.S3_OUTPUT_BUCKET_NAME,
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY
         )
