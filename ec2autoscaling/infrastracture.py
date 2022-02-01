@@ -10,16 +10,12 @@ from aws_cdk import (
     Aws,
 )
 
-from math import ceil
+import config
 
-class AUTOSCALING(Construct):
+class AutoScaling(Construct):
     def __init__(self, scope: Construct, id_: str, 
-        instance_type: str,
-        capacity: int,
-        key_name: str,
         kinesis_data_stream: kinesis.Stream, 
         glue_job: glue_alpha.Job, 
-        glue_worker_count: int, 
         bucket: s3.Bucket) -> None:
 
         super().__init__(scope, id_)
@@ -50,16 +46,11 @@ class AUTOSCALING(Construct):
 
 
 
-        bench_script_filename = 'bench_loop.sh'
+        bench_script_filename = 'ec2autoscaling/scripts/bench_loop.sh'
 
         asset_bench_loop_shell_script = s3assets.Asset(self, 'bench-shell-script',
             path=bench_script_filename,
         )
-
-
-        produce_rps_min = ceil(30000 / capacity) # ceil(((glue_worker_count * 1000) - 5000) / capacity)
-        produce_rps_step = ceil(1000 / capacity)
-        produce_rps_max = ceil(50000 / capacity) + produce_rps_step # ceil(((glue_worker_count * 1000) + 6000) / capacity)
 
 
         multipart_user_data = ec2.MultipartUserData()
@@ -80,22 +71,27 @@ class AUTOSCALING(Construct):
             'echo export PATH=\\$M2:$PATH >> /home/ec2-user/.bashrc',
 
             f'echo export GLUE_JOB_NAME={glue_job.job_name} >> /home/ec2-user/.bashrc',
-            f'echo export GLUE_WORKERS={glue_worker_count} >> /home/ec2-user/.bashrc',
+            f'echo export GLUE_WORKERS={config.GLUE_JOB_WORKERS} >> /home/ec2-user/.bashrc',
             f'echo export KINESIS_DATASTREAM={kinesis_data_stream.stream_name} >> /home/ec2-user/.bashrc',
             f'echo export AWS_DEFAULT_REGION={Aws.REGION} >> /home/ec2-user/.bashrc',
 
-            f'echo export PRODUCER_RPS_MIN={produce_rps_min} >> /home/ec2-user/.bashrc',
-            f'echo export PRODUCER_RPS_MAX={produce_rps_max} >> /home/ec2-user/.bashrc',
-            f'echo export PRODUCER_RPS_STEP={produce_rps_step} >> /home/ec2-user/.bashrc',
+            f'echo export PRODUCER_RPS_MIN={config.EC2_PRODUCER_RPS_MIN} >> /home/ec2-user/.bashrc',
+            f'echo export PRODUCER_RPS_MAX={config.EC2_PRODUCER_RPS_MAX} >> /home/ec2-user/.bashrc',
+            f'echo export PRODUCER_RPS_STEP={config.EC2_PRODUCER_RPS_STEP} >> /home/ec2-user/.bashrc',
 
             'git clone https://github.com/fibert/amazon-kinesis-producer.git /home/ec2-user/amazon-kinesis-producer',
             'cd /home/ec2-user/amazon-kinesis-producer/java/amazon-kinesis-producer-sample',
             
             
-            f'aws s3 cp {asset_bench_loop_shell_script.s3_object_url} .',
-            f"chmod u+x ./{asset_bench_loop_shell_script.s3_object_key.split('/')[-1]}",
+            f'aws s3 cp {asset_bench_loop_shell_script.s3_object_url} ./bench_loop.sh',
+            # f"mv ./{asset_bench_loop_shell_script.s3_object_key.split('/')[-1]} bench_loop.sh",
+            f"chmod u+x ./bench_loop.sh",
+            
 
             'chown -R ec2-user: /home/ec2-user/amazon-kinesis-producer',
+
+            'nohup ./bench_loop.sh',
+
 
             # f"./{asset_bench_loop_shell_script.s3_object_key.split('/')[-1]}",
             # f"aws s3 cp output-loop s3://fibertdf-spark-ui-logs/output-loop-{glue_worker_count}",
@@ -103,23 +99,23 @@ class AUTOSCALING(Construct):
 
 
         self.autoscaling_group = autoscaling.AutoScalingGroup(self, "AutoScalingGroup",
-            instance_type=ec2.InstanceType(instance_type),
+            instance_type=ec2.InstanceType(config.AUTOSCALING_GROUP_INSTANCE_TYPE),
             machine_image=ec2.MachineImage.latest_amazon_linux(),
             vpc=vpc,
             security_group=security_group,
-            key_name=key_name,
+            key_name=config.AUTOSCALING_EC2_KEY_PAIR_NAME,
             user_data=user_data,
-            min_capacity=capacity,
-            desired_capacity=capacity,
-            max_capacity=capacity,
+            min_capacity=config.AUTOSCALING_GROUP_CAPACITY,
+            desired_capacity=config.AUTOSCALING_GROUP_CAPACITY,
+            max_capacity=config.AUTOSCALING_GROUP_CAPACITY,
         )
 
         kinesis_data_stream.grant_read_write(self.autoscaling_group.role)
         bucket.grant_read_write(self.autoscaling_group.role)
         asset_bench_loop_shell_script.grant_read(self.autoscaling_group.role)
-
-       
-        cloudwatch_policy = iam.Policy(self, 'cloudwatch-policy',
+        
+        self.autoscaling_group.role.attach_inline_policy(
+            iam.Policy(self, 'kpl-publish-cloudwatch-policy',
             document=iam.PolicyDocument(
                 statements=[
                     iam.PolicyStatement(
@@ -139,18 +135,29 @@ class AUTOSCALING(Construct):
                 ],
             ),
             policy_name='KPL-instance-policy',
-            roles=[self.autoscaling_group.role],
+            # roles=[self.autoscaling_group.role],
+            )
         )
 
-
-            # export AWS_DEFAULT_REGION=us-east-1
-            # 'cd ~/amazon-kinesis-producer/java/amazon-kinesis-producer-sample/',
-            # f'echo GLUE_WORKERS={glue_worker_count} >> ~/.bashrc',
-            # f'echo KINESIS_DATASTREAM={kinesis_data_stream.stream_name} >> ~/.bashrc'
-            # 'echo export GLUE_WORKERS >> ~/.bashrc'
-            # 'echo export KINESIS_DATASTREAM >> ~/.bashrc'
-            # f"aws s3 cp {bucket.s3_url_for_object}/bench_script.sh .",
-            # 'chmod u+x bench_script.sh',
-            # f"bench_script.sh {kinesis_data_stream.stream_name} {glue_worker_count}",
-            
-            # curl http://169.254.169.254/latest/user-data | bash && source ~/.bashrc && cd amazon-kinesis-producer/java/amazon-kinesis-producer-sample/
+        # cloudwatch_policy = iam.Policy(self, 'kpl-publish-cloudwatch-policy',
+        #     document=iam.PolicyDocument(
+        #         statements=[
+        #             iam.PolicyStatement(
+        #                 actions=[
+        #                     'cloudwatch:PutMetricData'
+        #                 ],
+        #                 effect=iam.Effect.ALLOW,
+        #                 resources=['*'],
+        #             ),
+        #             iam.PolicyStatement(
+        #                 actions=[
+        #                     'glue:*'
+        #                 ],
+        #                 effect=iam.Effect.ALLOW,
+        #                 resources=[glue_job.job_arn],
+        #             )
+        #         ],
+        #     ),
+        #     policy_name='KPL-instance-policy',
+        #     # roles=[self.autoscaling_group.role],
+        # )
