@@ -78,6 +78,7 @@ class AutoScaling(Construct):
             f'echo export PRODUCER_RPS_MIN={config.EC2_PRODUCER_RPS_MIN} >> /home/ec2-user/.bashrc',
             f'echo export PRODUCER_RPS_MAX={config.EC2_PRODUCER_RPS_MAX} >> /home/ec2-user/.bashrc',
             f'echo export PRODUCER_RPS_STEP={config.EC2_PRODUCER_RPS_STEP} >> /home/ec2-user/.bashrc',
+            f'echo export PRODUCER_RUNNING_TIME={config.EC2_PRODUCER_RUNNING_TIME} >> /home/ec2-user/.bashrc',
 
             'git clone https://github.com/fibert/amazon-kinesis-producer.git /home/ec2-user/amazon-kinesis-producer',
             'cd /home/ec2-user/amazon-kinesis-producer/java/amazon-kinesis-producer-sample',

@@ -14,7 +14,7 @@ echo > $outfile
 
 stream_name=$KINESIS_DATASTREAM
 region=$AWS_DEFAULT_REGION
-producer_running_time=1800
+producer_running_time=$PRODUCER_RUNNING_TIME
 
 sleep_time_between_runs=$(expr 60 \* 10)
 
@@ -43,4 +43,3 @@ do
 
     sleep $sleep_time_between_runs
 done
-
