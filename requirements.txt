@@ -1,4 +1,10 @@
-aws-cdk.core>=1.132.0
-aws-cdk.aws_kinesis>=1.132.0
-aws-cdk.aws_glue>=1.132.0
-aws-cdk.aws_s3>=1.132.0
+attrs==21.2.0
+aws-cdk-lib==2.2.0
+aws-cdk.aws-glue-alpha==2.2.0a0
+cattrs==1.8.0
+constructs==10.0.13
+jsii==1.49.0
+publication==0.0.3
+python-dateutil==2.8.2
+six==1.16.0
+typing-extensions==4.0.1
