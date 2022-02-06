@@ -95,7 +95,7 @@ class AutoScaling(Construct):
         )
 
 
-        self.autoscaling_group = autoscaling.AutoScalingGroup(self, "AutoScalingGroup",
+        self.autoscaling_group = autoscaling.AutoScalingGroup(self, "KPL-Producers",
             instance_type=ec2.InstanceType(config.AUTOSCALING_GROUP_INSTANCE_TYPE),
             machine_image=ec2.MachineImage.latest_amazon_linux(),
             vpc=vpc,
