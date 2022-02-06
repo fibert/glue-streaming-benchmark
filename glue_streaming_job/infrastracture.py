@@ -6,7 +6,6 @@ from aws_cdk import (
     aws_kinesis as kinesis,
     aws_s3 as s3,
     aws_s3_deployment as s3deploy,
-    aws_s3_assets as s3assets,
     aws_iam as iam,
     Aws,
 )
