@@ -132,29 +132,5 @@ class AutoScaling(Construct):
                 ],
             ),
             policy_name='KPL-instance-policy',
-            # roles=[self.autoscaling_group.role],
             )
         )
-
-        # cloudwatch_policy = iam.Policy(self, 'kpl-publish-cloudwatch-policy',
-        #     document=iam.PolicyDocument(
-        #         statements=[
-        #             iam.PolicyStatement(
-        #                 actions=[
-        #                     'cloudwatch:PutMetricData'
-        #                 ],
-        #                 effect=iam.Effect.ALLOW,
-        #                 resources=['*'],
-        #             ),
-        #             iam.PolicyStatement(
-        #                 actions=[
-        #                     'glue:*'
-        #                 ],
-        #                 effect=iam.Effect.ALLOW,
-        #                 resources=[glue_job.job_arn],
-        #             )
-        #         ],
-        #     ),
-        #     policy_name='KPL-instance-policy',
-        #     # roles=[self.autoscaling_group.role],
-        # )
