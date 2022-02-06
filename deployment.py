@@ -4,10 +4,10 @@ from aws_cdk import (
     CfnOutput,
 )
 
-from glue.infrastracture import Glue
-from kinesis.infrastracture import Kinesis
-from s3.infrastracture import S3
-from ec2autoscaling.infrastracture import AutoScaling
+from glue_streaming_job.infrastracture import Glue
+from kinesis_datastream.infrastracture import Kinesis
+from s3_output_bucket.infrastracture import S3
+from kpl_producers.infrastracture import AutoScaling
 
 import config
 

@@ -10,7 +10,7 @@ from aws_cdk import (
     aws_iam as iam,
     Aws,
 )
-import glue.cfn_columns as columns
+from . cfn_columns import  cfn_table_columns as columns 
 
 import config
 
@@ -39,7 +39,7 @@ class Glue(Construct):
                 },
                 table_type="EXTERNAL_TABLE",
                 storage_descriptor=glue.CfnTable.StorageDescriptorProperty(
-                    columns=columns.cfn_table_columns,
+                    columns=columns,
                     location=f"{data_stream.stream_name}",
                     parameters={
                         "endpointUrl": f"https://kinesis.{Aws.REGION}.amazonaws.com",
@@ -63,7 +63,7 @@ class Glue(Construct):
         data_stream.grant_read_write(role_glue)
 
         deployment_protobuf_jar = s3deploy.BucketDeployment(self, 'populate-jars',
-            sources=[s3deploy.Source.asset('glue/jars')],
+            sources=[s3deploy.Source.asset(f'{os.path.dirname(os.path.abspath(__file__))}/jars')],
             destination_bucket=bucket,
             destination_key_prefix='jars/'
         )

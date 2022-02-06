@@ -1,3 +1,4 @@
+import os
 from constructs import Construct
 from aws_cdk import (
     aws_ec2 as ec2,
@@ -46,7 +47,7 @@ class AutoScaling(Construct):
 
 
 
-        bench_script_filename = 'ec2autoscaling/scripts/bench_loop.sh'
+        bench_script_filename = f'{os.path.dirname(os.path.abspath(__file__))}/scripts/bench_loop.sh'
 
         asset_bench_loop_shell_script = s3assets.Asset(self, 'bench-shell-script',
             path=bench_script_filename,
